@@ -1,0 +1,94 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Simulation Parameters
+np.random.seed(42)  # For reproducibility
+T = 100  # Total time (hours)
+dt = 0.1  # Time step
+steps = int(T / dt)
+time = np.linspace(0, T, steps)
+
+# Environmental Parameters
+day_duration = 12  # Hours of daylight in a 24-hour cycle
+
+# Carrying capacities
+K_cyano = 1e6  # Carrying capacity for cyanobacteria
+K_lacto = 1e6  # Carrying capacity for Lactobacillus
+
+# Initial Conditions
+X_cyano = np.zeros(steps)
+X_lacto = np.zeros(steps)
+L_acid = np.zeros(steps)
+
+X_cyano[0] = 1e4  # Initial cyanobacteria population
+X_lacto[0] = 1e4  # Initial Lactobacillus population
+L_acid[0] = 0     # Initial lactic acid concentration
+
+# Growth Rates (day/night cycles and metabolic states)
+mu_cyano_day = 0.3  # Cyanobacteria growth during day (1/hr)
+mu_cyano_night = -0.05  # Cyanobacteria decay at night
+mu_lacto_resp = 0.2  # Lactobacillus growth (respiratory)
+mu_lacto_ferm = 0.15  # Lactobacillus growth (fermentative)
+
+# Lactic Acid Production Rate
+lactic_acid_production_rate = 0.1  # Lactic acid produced per Lactobacillus
+
+# Diffusion coefficients (for stochasticity)
+sigma_cyano = 0.05
+sigma_lacto = 0.05
+sigma_acid = 0.02
+
+# Helper Functions
+def is_day(t, day_duration=day_duration):
+    """Determine if it's day or night."""
+    return (t % 24) < day_duration
+
+# Simulation Loop
+for i in range(1, steps):
+    t = time[i]
+    
+    # Day/Night-Dependent Growth Rates for Cyanobacteria
+    mu_cyano = mu_cyano_day if is_day(t) else mu_cyano_night
+    
+    # Random metabolic switch for Lactobacillus
+    if np.random.rand() > 0.5:
+        mu_lacto = mu_lacto_ferm
+        lactic_acid_production = lactic_acid_production_rate * X_lacto[i-1]
+    else:
+        mu_lacto = mu_lacto_resp
+        lactic_acid_production = 0
+    
+    # Cyanobacteria Population Dynamics
+    dX_cyano = (
+        mu_cyano * X_cyano[i-1] * (1 - X_cyano[i-1] / K_cyano) * dt +
+        sigma_cyano * X_cyano[i-1] * np.sqrt(dt) * np.random.randn()
+    )
+    X_cyano[i] = max(0, X_cyano[i-1] + dX_cyano)
+    
+    # Lactobacillus Population Dynamics
+    dX_lacto = (
+        mu_lacto * X_lacto[i-1] * (1 - X_lacto[i-1] / K_lacto) * dt +
+        sigma_lacto * X_lacto[i-1] * np.sqrt(dt) * np.random.randn()
+    )
+    X_lacto[i] = max(0, X_lacto[i-1] + dX_lacto)
+    
+    # Lactic Acid Production
+    dL_acid = (
+        lactic_acid_production * dt +
+        sigma_acid * np.sqrt(dt) * np.random.randn()
+    )
+    L_acid[i] = max(0, L_acid[i-1] + dL_acid)
+
+# Plot Results
+plt.figure(figsize=(10, 6))
+
+plt.plot(time, X_cyano, label='Cyanobacteria Population')
+plt.plot(time, X_lacto, label='Lactobacillus Population')
+plt.plot(time, L_acid, label='Lactic Acid Concentration', linestyle='--')
+
+plt.xlabel('Time (hours)')
+plt.ylabel('Population / Concentration')
+plt.title('Microbial Consortium Dynamics')
+plt.legend()
+plt.grid()
+plt.show()
