@@ -44,6 +44,8 @@ o	Passage en mu21 plus probable et si passage en mu22, maximum de x boucles avan
 
 -	Définir la sensibilité lumière (« Michaelis Menten like equation »)
 
+-	Ajouter volume mileu / densité de population etc..
+
 
 
 
